@@ -1,0 +1,26 @@
+# Local credentials and configuration
+.env
+.env.*
+!.env.example
+*.tfvars
+*.tfvars.json
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Python and Node build artifacts
+.venv/
+__pycache__/
+*.py[cod]
+node_modules/
+dist/
+build/
+
+# Editor and operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
