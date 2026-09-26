@@ -1,5 +1,10 @@
 # Application
 
-Agent and tool code will be added after the development cluster and read-only Kubernetes RBAC boundary exist.
+The first implementation is intentionally small:
 
-The first code milestone is deterministic diagnostic tools. The LLM is added only after those tools return safe, structured evidence.
+1. A synthetic `orders-api` Lambda that demonstrates one known failure.
+2. Three deterministic, read-only diagnostic tools.
+3. One Bedrock-powered agent workflow.
+4. A Streamlit page that displays the agent's evidence-based incident report.
+
+No multi-agent design, external MCP server, Kubernetes integration, or automatic remediation belongs in Phase 1.

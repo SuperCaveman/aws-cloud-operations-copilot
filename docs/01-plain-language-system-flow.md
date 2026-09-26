@@ -2,54 +2,45 @@
 
 ## One-sentence explanation
 
-The copilot watches a development Kubernetes cluster, gathers the same evidence a platform engineer would gather during an incident, explains what it found, and prepares a safe proposed fix for a human to review.
+The copilot acts like a junior on-call engineer: it gathers the same evidence a person would gather, checks the written runbook, and explains the likely problem. It cannot fix anything by itself.
 
-## The parts and what each one does
+## This part does this, then sends it to this part
 
-| Part | Plain-language job | What it sends next |
+| Part | This part does this | Then it sends |
 |---|---|---|
-| Engineer | Asks a question or receives an alert. | A question such as “Why is checkout-api failing?” |
-| Web UI | Gives the engineer a safe place to ask questions and view the answer. | The question and the engineer identity to the agent. |
-| Identity layer | Confirms who the engineer is and which cluster/environment they may view. | An authenticated request with the engineer's role. |
-| AgentCore agent | Decides which approved, read-only diagnostic tools are needed. It does not receive cluster-admin access. | Tool requests, such as “get pod events” or “read the checkout-api runbook.” |
-| Diagnostic tools | Call the Kubernetes API and monitoring systems using narrowly scoped permissions. | Structured facts: status, events, logs, metrics, and errors. |
-| Runbook knowledge base | Finds relevant operating procedures and standards. | The exact runbook passages used in the response. |
-| AgentCore agent | Combines the facts and runbook passages into an evidence-based explanation. | An incident report and, optionally, a proposed Git change. |
-| Git repository | Stores a proposed manifest/Helm/Kustomize change in a branch. | A pull request for human review. |
-| Human reviewer | Checks the evidence and proposed change. | Approval or rejection. |
-| GitOps deployment system | Applies an approved, merged change to the **development** cluster. | The updated desired cluster state. |
+| Engineer | Asks why `orders-api` is unhealthy. | The question to the web interface. |
+| Streamlit web interface | Displays the question and the final report. | The question to the agent. |
+| Agent | Decides which approved facts it needs before answering. | Requests to read-only AWS tools and the runbook search. |
+| Alarm tool | Reads whether the relevant CloudWatch alarm is `OK`, `ALARM`, or `INSUFFICIENT_DATA`, plus the reason. | Structured alarm facts to the agent. |
+| Log tool | Retrieves a short, redacted set of recent error lines from the correct CloudWatch log group. | Structured log evidence to the agent. |
+| Metadata tool | Retrieves only safe metadata, such as the Lambda runtime, memory, timeout, state, and last update time. | Structured deployment facts to the agent. |
+| Runbook retrieval | Finds the documentation section that matches the error. | The relevant runbook passage and source reference to the agent. |
+| Agent | Separates facts from inference, explains the likely cause, and recommends a manual next step. | A cited incident report to the engineer. |
+| Engineer | Reviews the result and makes any change manually. | A normal reviewed AWS change outside the agent. |
 
-## Example: a pod keeps restarting
+## Example incident
 
-1. A developer notices that `checkout-api` is repeatedly restarting.
-2. They ask: **“Why is checkout-api restarting in dev?”**
-3. The identity layer confirms that they are allowed to view the development namespace.
-4. The agent calls only approved read-only tools:
-   - get the Deployment and Pod status;
-   - get recent Kubernetes events;
-   - retrieve the container logs from the failing pod;
-   - retrieve CPU/memory requests, limits, and HPA status;
-   - search the runbook for `CrashLoopBackOff`.
-5. The tools return structured facts. For example: the readiness probe is returning `503`, events show a missing configuration key, and the logs show the application stopped during startup.
-6. The agent writes a report:
-   - **Observed:** the pod is in `CrashLoopBackOff`.
-   - **Evidence:** the specific event, log message, and configuration reference.
-   - **Likely cause:** a missing non-secret configuration value.
-   - **Recommendation:** add the documented ConfigMap key and verify the readiness endpoint.
-   - **Confidence:** medium or high, depending on the evidence.
-7. If asked, the agent creates a branch containing a proposed manifest change. It does **not** merge it.
-8. A human reviews the pull request. Only a normal GitOps review and merge can change the development cluster.
+1. The development `orders-api` Lambda receives a request.
+2. It cannot find a required non-secret configuration value and logs a predictable application error.
+3. A CloudWatch alarm enters `ALARM`.
+4. The engineer asks: **“Why is orders-api failing?”**
+5. The agent calls the alarm tool, log tool, metadata tool, and runbook search.
+6. It responds:
+   - **Observed:** The alarm changed at a specific time, and the last three error lines show the missing configuration key.
+   - **Runbook:** The deployment-validation runbook says to verify the named non-secret configuration value before re-deploying.
+   - **Likely cause:** The development deployment omitted that configuration value.
+   - **Safe next step:** An engineer should update the development configuration through the normal deployment process, then confirm the alarm returns to `OK`.
+   - **Confidence:** High, because the alarm, log evidence, and runbook agree.
 
-## What is AI doing, and what is ordinary automation doing?
+## What is AI, and what is not?
 
-| Work | Owner | Reason |
+| Work | Owner | Why |
 |---|---|---|
-| Read resource objects, events, logs, and metrics | Ordinary deterministic tools | The answer must be factual and repeatable. |
-| Search runbooks | Retrieval system | The answer needs the organization's documented guidance. |
-| Decide which diagnostics to request and explain their meaning | AI agent | This is the ambiguous, investigative part of incident triage. |
-| Produce a proposed patch and incident summary | AI agent | It can accelerate drafting, but a person must judge correctness. |
-| Apply a change to the cluster | GitOps system after human approval | Cluster changes must be controlled, auditable, and reversible. |
+| Read alarms, logs, and metadata | Deterministic AWS tools | Facts must be repeatable. |
+| Retrieve a runbook | Search/retrieval | The response needs documented operating guidance. |
+| Decide what evidence to request and explain it | AI agent | Investigation and explanation require judgment. |
+| Change AWS configuration | Human engineer | Changes require explicit review and accountable approval. |
 
 ## Safety rule
 
-Permissions, not prompts, enforce safety. The agent's Kubernetes identity is read-only, cannot read Secret values, and has access only to a development namespace in the first release.
+The safety boundary is enforced by IAM. The agent uses a role that can read only the named development resources. It cannot invoke write APIs, retrieve secret values, or use arbitrary shell commands.
