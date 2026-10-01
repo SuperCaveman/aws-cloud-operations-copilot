@@ -24,3 +24,13 @@ COPILOT_ALARM_NAME=aws-cloud-operations-copilot-development-orders-api-missing-c
 ```
 
 The `get_safe_function_metadata` response deliberately excludes Lambda environment variables. Log messages are bounded and redact common `password`, `token`, `api_key`, and `secret` assignments before they can reach a model or interface.
+
+## Single-agent workflow
+
+`agent/workflow.py` uses LangGraph to enforce a fixed safe order:
+
+```text
+question -> read-only alarm/log/metadata tools -> fixed S3 runbook -> one Bedrock Converse call -> report
+```
+
+The agent uses Amazon Nova Lite (`amazon.nova-lite-v1:0`) with a maximum 350-token response and a low temperature **only when the alarm is `ALARM`, a matching configuration error is present, and the Lambda has not changed since that error**. Otherwise, a deterministic evidence gate returns either a no-active-incident or recovery-in-progress report at zero model-token cost. It cannot choose another AWS resource, invoke a tool with arbitrary input, or perform remediation. AgentCore deployment and Streamlit come after this local workflow is verified.

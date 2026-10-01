@@ -12,3 +12,13 @@ output "orders_api_missing_config_alarm_name" {
   description = "The allow-listed synthetic development alarm for later read-only diagnostic tools."
   value       = aws_cloudwatch_metric_alarm.orders_api_missing_config.alarm_name
 }
+
+output "runbook_bucket_name" {
+  description = "Private, versioned S3 bucket containing only the synthetic Phase 1 runbook."
+  value       = aws_s3_bucket.runbooks.bucket
+}
+
+output "orders_api_runbook_s3_uri" {
+  description = "The single allow-listed runbook source for the Phase 1 agent."
+  value       = "s3://${aws_s3_bucket.runbooks.bucket}/${aws_s3_object.orders_api_runbook.key}"
+}

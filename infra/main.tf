@@ -1,6 +1,7 @@
 locals {
   name_prefix              = "${var.project_name}-${var.environment}"
   orders_api_function_name = "${local.name_prefix}-orders-api"
+  runbook_bucket_name      = "cloudops-copilot-${data.aws_caller_identity.current.account_id}-${var.environment}-runbooks"
   common_tags = {
     Project     = var.project_name
     Environment = var.environment
@@ -8,6 +9,8 @@ locals {
     Purpose     = "synthetic-ai-agent-study-incident"
   }
 }
+
+data "aws_caller_identity" "current" {}
 
 provider "aws" {
   region = var.aws_region
@@ -111,4 +114,48 @@ resource "aws_cloudwatch_metric_alarm" "orders_api_missing_config" {
   threshold           = 1
   treat_missing_data  = "notBreaching"
   actions_enabled     = false
+}
+
+resource "aws_s3_bucket" "runbooks" {
+  bucket = local.runbook_bucket_name
+}
+
+resource "aws_s3_bucket_public_access_block" "runbooks" {
+  bucket                  = aws_s3_bucket.runbooks.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "runbooks" {
+  bucket = aws_s3_bucket.runbooks.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_versioning" "runbooks" {
+  bucket = aws_s3_bucket.runbooks.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_object" "orders_api_runbook" {
+  bucket       = aws_s3_bucket.runbooks.id
+  key          = "runbooks/orders-api-missing-config.md"
+  source       = "${path.module}/../docs/04-orders-api-missing-config-runbook.md"
+  etag         = filemd5("${path.module}/../docs/04-orders-api-missing-config-runbook.md")
+  content_type = "text/markdown"
+
+  depends_on = [
+    aws_s3_bucket_public_access_block.runbooks,
+    aws_s3_bucket_server_side_encryption_configuration.runbooks,
+    aws_s3_bucket_versioning.runbooks,
+  ]
 }
