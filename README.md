@@ -41,3 +41,5 @@ app/     Future agent, read-only tool, and Streamlit code
 docs/    Scope, plain-language design, build plan, and safeguards
 infra/   Future Terraform for the minimal AWS development environment
 ```
+# aws-cloud-operations-copilot
+A safe AWS Bedrock-powered incident investigation copilot
