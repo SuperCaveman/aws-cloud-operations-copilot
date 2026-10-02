@@ -68,4 +68,6 @@ Complete one checkpoint at a time. Stop after each checkpoint and verify it befo
 3. Record expected tool calls and expected refusals for every test.
 4. Demonstrate that the agent refuses unsupported or unsafe requests.
 
+**Current implementation:** `streamlit_app.py` supplies the local-only form. It runs one fixed workflow only after the engineer submits a question and displays the model-token usage for that request. The ten-prompt evaluation set and recorded demo remain to be completed.
+
 **Checkpoint:** You can record a short demo from alert to evidence-based diagnosis without the agent changing AWS.

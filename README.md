@@ -68,7 +68,7 @@ It does **not** automate remediation. That boundary is deliberate.
 ## Repository map
 
 ```text
-app/     Lambda, read-only diagnostic tools, LangGraph workflow, and later Streamlit code
+app/     Lambda, read-only diagnostic tools, LangGraph workflow, and local Streamlit code
 docs/    Scope, architecture, safeguards, deployment evidence, and presentation material
 infra/   Terraform for the minimal AWS development environment
 ```
