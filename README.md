@@ -64,6 +64,7 @@ It does **not** automate remediation. That boundary is deliberate.
 - [Tool and permission contracts](docs/03-tool-and-permission-contracts.md)
 - [Deployed AWS evidence and repeatable verification](docs/05-deployment-evidence.md)
 - [LinkedIn post draft for the finished Phase 1 demo](docs/06-linkedin-post-draft.md)
+- [Offline prompt evaluation plan](docs/07-evaluation-plan.md)
 
 ## Repository map
 
